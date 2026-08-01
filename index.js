@@ -21,12 +21,27 @@ app.use(express.json());
 
 app.post('/projects', (req,res) => {
     const newProject = {
-        id: projects.lenght + 1,
+        id: projects.length + 1,
         name: req.body.name
     };
     projects.push(newProject);
     res.status(201).json(newProject);
 });
+
+app.put('/projects/:id', (req,res) =>
+{
+    const projectId = parseInt(req.params.id);
+    const project = projects.find(p => p.id == projectId);
+
+    if(!project)
+    {
+        return res.status(404).json({ error: "Project not found" });
+    }
+
+    project.name = req.body.name;
+    res.json(project);
+})
+
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
