@@ -16,6 +16,17 @@ app.get('/projects', (req,res) =>{
     res.json(projects);
 });
 
+app.get('/projects/:id', (req, res) => {        
+  const projectId = parseInt(req.params.id);
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project) {
+    return res.status(404).json({ error: "Project not found" });
+  }
+
+  res.json(project);
+});
+
 
 app.use(express.json());
 
@@ -42,6 +53,18 @@ app.put('/projects/:id', (req,res) =>
     res.json(project);
 })
 
+app.delete('/projects/:id', (req,res) => {
+    const projectId = parseInt(req.params.id);
+    const index = projects.findIndex(p => p.id == projectId);
+
+    if(index === -1)
+    {
+        return res.status(404).json({error: " Project not found"});
+    }
+
+    projects.splice(index,1);
+    res.status(204).send();
+})
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
