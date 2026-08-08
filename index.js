@@ -1,3 +1,4 @@
+const pool = require('./db');
 const express = require('express');
 const app = express();
 const PORT = 3000;
@@ -123,6 +124,10 @@ app.delete('/tasks/:id', (req, res) => {
   res.status(204).send();
 });
 
+app.get('/test-db', async(req,res) => {
+    const result = await pool.query('SELECT NOW()');
+    res.json(result.rows);
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
