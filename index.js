@@ -66,6 +66,64 @@ app.delete('/projects/:id', (req,res) => {
     res.status(204).send();
 })
 
+let tasks = [
+    {id:1, projectId: 1, title: "Design Hompage", status: "todo"},
+    {id:2, projectId: 1, title: "Set up hosting", status: "in-progress" },
+    {id:3, projectId: 2, title: "Draft campaign copy", status: "todo"}
+];
+
+app.get('/tasks/',(req,res) => {
+res.json(tasks);
+});
+
+
+app.get('/tasks/:id',(req,res) => {
+const taskId = parseInt(req.params.id);
+const task = tasks.find(t => t.id === taskId);
+
+if(!task)
+{return res.status(404).json({error: "Task not found"})
+};
+res.json(task);
+});
+
+app.post('/tasks/', (req,res) => {
+    const newTask = {
+        id: tasks.length + 1,
+        projectId: req.body.projectId,
+        title: req.body.tittle,
+        status: req.body.status,
+    };
+    tasks.push(newTask);
+    res.status(201).json(newTask);
+});
+
+app.put('/tasks/:id', (req, res) => {
+  const taskId = parseInt(req.params.id);
+  const task = tasks.find(t => t.id === taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  task.title = req.body.title ?? task.title;
+  task.status = req.body.status ?? task.status;
+  res.json(task);
+});
+
+app.delete('/tasks/:id', (req, res) => {
+  const taskId = parseInt(req.params.id);
+  const index = tasks.findIndex(t => t.id === taskId);
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  tasks.splice(index, 1);
+  res.status(204).send();
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
