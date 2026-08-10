@@ -8,12 +8,12 @@ app.get('/', (req, res) => {
 });
 
 
-app.get('/projects/:id', async (req, res) => {  
+app.get('/projects', async (req, res) => {  
   const result = await pool.query('SELECT * FROM projects');     
   res.json(result.rows);
 });
 
-app.get('/projects', async (req,res) =>{
+app.get('/projects/:id', async (req,res) =>{
     const result = await pool.query('SELECT * FROM projects where id = $1', [req.params.id]);
     if (result.rows.length === 0){
         return res.status(404).json({error: "Project not found"});
@@ -26,7 +26,7 @@ app.use(express.json());
 
 app.post('/projects', async (req,res) => {
     const result = await pool.query(
-      'INSERT INTO projects (name) values $1 RETURNING *',
+      'INSERT INTO projects (name) values ($1) RETURNING *',
       [req.body.name]
     );
     res.status(201).json(result.rows[0]);
@@ -75,7 +75,7 @@ res.json(result.rows[0]);
 app.post('/tasks/', async (req,res) => {
     const result = await pool.query(
     'INSERT INTO tasks (project_id, title, status) VALUES ($1, $2, $3) RETURNING *',
-     [req.params.projectId, req.params.title, req.params.status || 'todo'] );
+     [req.body.projectId, req.body.title, req.body.status || 'todo'] );
    
     res.status(201).json(result.rows[0]);
 });
@@ -83,7 +83,7 @@ app.post('/tasks/', async (req,res) => {
 app.put('/tasks/:id', async (req, res) => {
   const result = await pool.query(
   'UPDATE tasks SET title = COALESCE($1, title), status = COALESCE($2, status) WHERE id = $3 RETURNING *',
-  [req.params.title, req.params.status, req.params.id]
+  [req.body.title, req.body.status, req.body.id]
 );
 
   if (result.rows.length === 0) {
