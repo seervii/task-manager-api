@@ -7,120 +7,102 @@ app.get('/', (req, res) => {
   res.send('Task Manager API is running');
 });
 
-let projects = 
-[
-    {id: 1, name: "Website Redesign"},
-    {id: 2, name: "Marketing Campaign"}
-];
 
-app.get('/projects', (req,res) =>{
-    res.json(projects);
+app.get('/projects/:id', async (req, res) => {  
+  const result = await pool.query('SELECT * FROM projects');     
+  res.json(result.rows);
 });
 
-app.get('/projects/:id', (req, res) => {        
-  const projectId = parseInt(req.params.id);
-  const project = projects.find(p => p.id === projectId);
-
-  if (!project) {
-    return res.status(404).json({ error: "Project not found" });
-  }
-
-  res.json(project);
+app.get('/projects', async (req,res) =>{
+    const result = await pool.query('SELECT * FROM projects where id = $1', [req.params.id]);
+    if (result.rows.length === 0){
+        return res.status(404).json({error: "Project not found"});
+    }
+    res.json(result.rows[0]);
 });
 
 
 app.use(express.json());
 
-app.post('/projects', (req,res) => {
-    const newProject = {
-        id: projects.length + 1,
-        name: req.body.name
-    };
-    projects.push(newProject);
-    res.status(201).json(newProject);
+app.post('/projects', async (req,res) => {
+    const result = await pool.query(
+      'INSERT INTO projects (name) values $1 RETURNING *',
+      [req.body.name]
+    );
+    res.status(201).json(result.rows[0]);
 });
 
-app.put('/projects/:id', (req,res) =>
+app.put('/projects/:id', async (req,res) =>
 {
-    const projectId = parseInt(req.params.id);
-    const project = projects.find(p => p.id == projectId);
-
-    if(!project)
+    const result = await pool.query('UPDATE projects SET name = $1 WHERE id = $2 RETURNING *',
+      [req.body.name, req.params.id]
+    )
+    if(result.rows.length === 0)
     {
-        return res.status(404).json({ error: "Project not found" });
+      return res.status(404).json({ error: "Project not found" });
     }
+    res.json(result.rows[0]);
+});
 
-    project.name = req.body.name;
-    res.json(project);
-})
+app.delete('/projects/:id',async (req,res) => {
+    const result = await pool.query('DELETE FROM projects where id = $1 RETURNING *',
+     [req.params.id]);
 
-app.delete('/projects/:id', (req,res) => {
-    const projectId = parseInt(req.params.id);
-    const index = projects.findIndex(p => p.id == projectId);
-
-    if(index === -1)
+    if(result.rows.length === 0)
     {
-        return res.status(404).json({error: " Project not found"});
+      return res.status(404).json({error: " Project not found"});
     }
-
-    projects.splice(index,1);
     res.status(204).send();
-})
-
-let tasks = [
-    {id:1, projectId: 1, title: "Design Hompage", status: "todo"},
-    {id:2, projectId: 1, title: "Set up hosting", status: "in-progress" },
-    {id:3, projectId: 2, title: "Draft campaign copy", status: "todo"}
-];
-
-app.get('/tasks/',(req,res) => {
-res.json(tasks);
 });
 
 
-app.get('/tasks/:id',(req,res) => {
-const taskId = parseInt(req.params.id);
-const task = tasks.find(t => t.id === taskId);
+app.get('/tasks/',async (req,res) => {
+  const result = await pool.query('SELECT * FROM tasks');
+res.json(result.rows);
+});
 
-if(!task)
+
+app.get('/tasks/:id',async (req,res) => {
+const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
+
+if(result.rows.length === 0)
 {return res.status(404).json({error: "Task not found"})
 };
-res.json(task);
+res.json(result.rows[0]);
 });
 
-app.post('/tasks/', (req,res) => {
-    const newTask = {
-        id: tasks.length + 1,
-        projectId: req.body.projectId,
-        title: req.body.tittle,
-        status: req.body.status,
-    };
-    tasks.push(newTask);
-    res.status(201).json(newTask);
+
+app.post('/tasks/', async (req,res) => {
+    const result = await pool.query(
+    'INSERT INTO tasks (project_id, title, status) VALUES ($1, $2, $3) RETURNING *',
+     [req.params.projectId, req.params.title, req.params.status || 'todo'] );
+   
+    res.status(201).json(result.rows[0]);
 });
 
-app.put('/tasks/:id', (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const task = tasks.find(t => t.id === taskId);
+app.put('/tasks/:id', async (req, res) => {
+  const result = await pool.query(
+  'UPDATE tasks SET title = COALESCE($1, title), status = COALESCE($2, status) WHERE id = $3 RETURNING *',
+  [req.params.title, req.params.status, req.params.id]
+);
 
-  if (!task) {
+  if (result.rows.length === 0) {
     return res.status(404).json({ error: "Task not found" });
   }
 
-  task.title = req.body.title ?? task.title;
-  task.status = req.body.status ?? task.status;
-  res.json(task);
+  res.json(result.rows[0]);
 });
 
-app.delete('/tasks/:id', (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const index = tasks.findIndex(t => t.id === taskId);
+app.delete('/tasks/:id', async (req, res) => {
+  const result = await pool.query (
+  'DELETE FROM tasks WHERE id = $1 RETURNING *',
+  [req.params.id]
+  );
 
-  if (index === -1) {
+  if (result.rows.length === 0) {
     return res.status(404).json({ error: "Task not found" });
   }
 
-  tasks.splice(index, 1);
   res.status(204).send();
 });
 
