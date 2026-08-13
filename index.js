@@ -114,3 +114,32 @@ app.get('/test-db', async(req,res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+const bcrypt = require('bcrypt');
+
+app.post('/signup', async (req,res)=> {
+  const hashedPassword = await bcrypt.hash(req.body.password, 10);
+  const result = await pool.query(
+    'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
+    [req.body.email, hashedPassword]);
+    res.status(201).json(result.rows[0]);
+});
+
+const jwt = require('jsonwebtoken');
+app.post('/login', async(req,res)=> {
+  const result = await pool.query('SELECT * FROM users WHERE email = $1', [req.body.email]);
+  const user = result.rows[0];
+
+if (!user) {
+  return res.status(401).json({error : "Invalid email or password"});
+}
+
+const passwordMatch = await bcrypt.compare(req.body.password, user.password);
+
+if(!passwordMatch) {
+  return res.status(401).json({error: "Invaild emai or password"});
+}
+
+const token = jwt.sign({ userId: user.id}, 'yoursecret-key', {expiresIn: '1h'});
+res.json({token});
+});
