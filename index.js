@@ -1,3 +1,4 @@
+require('dotenv').config();
 const pool = require('./db');
 const express = require('express');
 const app = express();
@@ -24,15 +25,15 @@ app.get('/projects/:id', async (req,res) =>{
 
 app.use(express.json());
 
-app.post('/projects', async (req,res) => {
-    const result = await pool.query(
-      'INSERT INTO projects (name) values ($1) RETURNING *',
-      [req.body.name]
-    );
-    res.status(201).json(result.rows[0]);
+app.post('/projects', authenticateToken, async (req, res) => {
+  const result = await pool.query(
+    'INSERT INTO projects (name) values ($1) RETURNING *',
+    [req.body.name]
+  );
+  res.status(201).json(result.rows[0]);
 });
 
-app.put('/projects/:id', async (req,res) =>
+app.put('/projects/:id', authenticateToken, async (req,res) =>
 {
     const result = await pool.query('UPDATE projects SET name = $1 WHERE id = $2 RETURNING *',
       [req.body.name, req.params.id]
@@ -44,7 +45,7 @@ app.put('/projects/:id', async (req,res) =>
     res.json(result.rows[0]);
 });
 
-app.delete('/projects/:id',async (req,res) => {
+app.delete('/projects/:id',  authenticateToken, async (req,res) => {
     const result = await pool.query('DELETE FROM projects where id = $1 RETURNING *',
      [req.params.id]);
 
@@ -56,13 +57,13 @@ app.delete('/projects/:id',async (req,res) => {
 });
 
 
-app.get('/tasks/',async (req,res) => {
+app.get('/tasks/', authenticateToken, async (req,res) => {
   const result = await pool.query('SELECT * FROM tasks');
 res.json(result.rows);
 });
 
 
-app.get('/tasks/:id',async (req,res) => {
+app.get('/tasks/:id', authenticateToken, async (req,res) => {
 const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
 
 if(result.rows.length === 0)
@@ -72,7 +73,7 @@ res.json(result.rows[0]);
 });
 
 
-app.post('/tasks/', async (req,res) => {
+app.post('/tasks/', authenticateToken, async (req,res) => {
     const result = await pool.query(
     'INSERT INTO tasks (project_id, title, status) VALUES ($1, $2, $3) RETURNING *',
      [req.body.projectId, req.body.title, req.body.status || 'todo'] );
@@ -80,7 +81,7 @@ app.post('/tasks/', async (req,res) => {
     res.status(201).json(result.rows[0]);
 });
 
-app.put('/tasks/:id', async (req, res) => {
+app.put('/tasks/:id', authenticateToken, async (req, res) => {
   const result = await pool.query(
   'UPDATE tasks SET title = COALESCE($1, title), status = COALESCE($2, status) WHERE id = $3 RETURNING *',
   [req.body.title, req.body.status, req.body.id]
@@ -93,7 +94,7 @@ app.put('/tasks/:id', async (req, res) => {
   res.json(result.rows[0]);
 });
 
-app.delete('/tasks/:id', async (req, res) => {
+app.delete('/tasks/:id', authenticateToken, async (req, res) => {
   const result = await pool.query (
   'DELETE FROM tasks WHERE id = $1 RETURNING *',
   [req.params.id]
@@ -140,6 +141,23 @@ if(!passwordMatch) {
   return res.status(401).json({error: "Invaild emai or password"});
 }
 
-const token = jwt.sign({ userId: user.id}, 'yoursecret-key', {expiresIn: '1h'});
+const token = jwt.sign({ userId: user.id}, process.env.JWT_SECRET, {expiresIn: '1h'});
 res.json({token});
 });
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Access denied, no token provided" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid or expired token" });
+    }
+    req.user = user;
+    next();
+  });
+};
