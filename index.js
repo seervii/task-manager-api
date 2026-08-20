@@ -57,13 +57,13 @@ app.delete('/projects/:id',  authenticateToken, async (req,res) => {
 });
 
 
-app.get('/tasks/', authenticateToken, async (req,res) => {
+app.get('/tasks/', async (req,res) => {
   const result = await pool.query('SELECT * FROM tasks');
 res.json(result.rows);
 });
 
 
-app.get('/tasks/:id', authenticateToken, async (req,res) => {
+app.get('/tasks/:id', async (req,res) => {
 const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
 
 if(result.rows.length === 0)
