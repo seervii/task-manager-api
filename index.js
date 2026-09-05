@@ -1,8 +1,11 @@
 require('dotenv').config();
+const cors = require('cors');
 const pool = require('./db');
 const express = require('express');
 const app = express();
 const PORT = 3000;
+
+app.use(cors());
 
 app.get('/', (req, res) => {
   res.send('Task Manager API is running');
