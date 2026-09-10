@@ -2,10 +2,6 @@
 
 A REST API for a task management tool — organize work into Projects, with Tasks nested under each Project. Think of it as a simplified backend for something like Trello or Asana.
 
-## Why I built this
-
-Built as hands-on prep for an upcoming software engineering internship. Rather than following a tutorial end-to-end, I learned Express, PostgreSQL, and JWT authentication by building this project piece by piece — starting with in-memory data to get the routing logic right, then migrating to a real PostgreSQL database, then adding secure user authentication on top.
-
 ## Features
 - Full CRUD for Projects and Tasks
 - User signup/login with JWT authentication
